@@ -72,7 +72,7 @@ export function createBeerGlass(model: string, position: Vector3) {
 }
 
 export function createTap(tapBeerType: BeerType, dispenseEntity: Entity) {
-	const tapEntity = engine.addEntity()
+	const tapEntity = engine.getNetworkManager().addEntity()
 	const tapData = getTapData(tapBeerType)
 
 	TapComponent.create(tapEntity, {
@@ -116,7 +116,7 @@ export function createTap(tapBeerType: BeerType, dispenseEntity: Entity) {
 	SyncEntity.create(tapEntity, { componentIds: [Animator.componentId] })
 
 	const tapColliderPosition = Vector3.add(tapData.position, Vector3.create(0, 0.05, 0))
-	const colliderParentEntity = engine.addEntity()
+	const colliderParentEntity = engine.getNetworkManager().addEntity()
 	Transform.create(colliderParentEntity, {
 		parent: tapEntity,
 		position: tapColliderPosition
@@ -125,7 +125,7 @@ export function createTap(tapBeerType: BeerType, dispenseEntity: Entity) {
 		beerType: tapBeerType
 	})
 
-	const colliderEntity = engine.addEntity()
+	const colliderEntity = engine.getNetworkManager().addEntity()
 	Transform.create(colliderEntity, {
 		parent: colliderParentEntity,
 		scale: Vector3.scale(Vector3.One(), 0.33),
