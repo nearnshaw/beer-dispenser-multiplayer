@@ -19,7 +19,7 @@ import { Vector3, Quaternion } from '@dcl/sdk/math'
 import { BeerGlass, BeerType, getTapData, TapBase, TapComponent } from '../definitions'
 
 export function createBeerGlass(model: string, position: Vector3) {
-	const glassEntity = engine.addEntity()
+	const glassEntity = engine.getNetworkManager().addEntity()
 
 	GltfContainer.create(glassEntity, {
 		src: model,
