@@ -11,9 +11,7 @@ import {
 	MeshRenderer,
 	AudioSource,
 	ColliderLayer,
-	SyncEntity,
-	AvatarAnchorPointType,
-	AvatarAttach
+	SyncComponents,
 } from '@dcl/sdk/ecs'
 import { Vector3, Quaternion } from '@dcl/sdk/math'
 import { BeerGlass, BeerType, getTapData, TapBase, TapComponent } from '../definitions'
@@ -68,7 +66,7 @@ export function createBeerGlass(model: string, position: Vector3) {
 		]
 	})
 
-	SyncEntity.create(glassEntity, { componentIds: [Transform.componentId, Animator.componentId, AvatarAttach.componentId] })
+	SyncComponents.create(glassEntity, { componentIds: [Transform.componentId, Animator.componentId, BeerGlass.componentId] })
 }
 
 export function createTap(tapBeerType: BeerType, dispenseEntity: Entity) {
@@ -113,7 +111,7 @@ export function createTap(tapBeerType: BeerType, dispenseEntity: Entity) {
 		]
 	})
 
-	SyncEntity.create(tapEntity, { componentIds: [Animator.componentId] })
+	SyncComponents.create(tapEntity, { componentIds: [Animator.componentId, TapComponent.componentId] })
 
 	const tapColliderPosition = Vector3.add(tapData.position, Vector3.create(0, 0.05, 0))
 	const colliderParentEntity = engine.getNetworkManager().addEntity()
@@ -124,6 +122,7 @@ export function createTap(tapBeerType: BeerType, dispenseEntity: Entity) {
 	TapBase.create(colliderParentEntity, {
 		beerType: tapBeerType
 	})
+	SyncComponents.create(colliderParentEntity, { componentIds: [Transform.componentId] })
 
 	const colliderEntity = engine.getNetworkManager().addEntity()
 	Transform.create(colliderEntity, {
@@ -147,9 +146,7 @@ export function createTap(tapBeerType: BeerType, dispenseEntity: Entity) {
 		]
 	})
 
-	SyncEntity.create(colliderEntity, { componentIds: [Transform.componentId] })
-
-
+	SyncComponents.create(colliderEntity, { componentIds: [Transform.componentId] })
 }
 
 export function playSound(audio: string, loop: boolean = false, position?: Vector3) {

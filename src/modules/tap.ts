@@ -12,54 +12,56 @@ function getBeerBehindTap(beerType: BeerType) {
   }
 }
 
-export function tapPumpSystem(dt: number) {
-  for (const [entity, tapReadonly] of engine.getEntitiesWith(TapComponent)) {
-    // While is pouring
-    if (tapReadonly.pouring) {
-      // At start the pouring, play the sound an animation
-      if (Scalar.withinEpsilon(tapReadonly.pouringTime, 0)) {
-        Animator.playSingleAnimation(entity, `Pour`)
-        playSound('sounds/beerPump.mp3', false, getPlayerPosition())
+export function tapPumpSystem(userId: string) {
+  return function (dt: number) {
+    for (const [entity, tapReadonly] of engine.getEntitiesWith(TapComponent)) {
+      // While is pouring
+      if (tapReadonly.pouring) {
+        // At start the pouring, play the sound an animation
+        if (Scalar.withinEpsilon(tapReadonly.pouringTime, 0)) {
+          Animator.playSingleAnimation(entity, `Pour`)
+          playSound('sounds/beerPump.mp3', false, getPlayerPosition())
+          const glassEntity = getBeerBehindTap(tapReadonly.beerType)
+          if (glassEntity) Animator.playSingleAnimation(glassEntity, `Pour${getTapData(tapReadonly.beerType).name}`)
+        }
+
+        const tap = TapComponent.getMutable(entity)
+        tap.pouringTime += dt
+
+        if (tap.pouringTime >= 2.5) {
+          tap.pouring = false
+          tap.pouringTime = 0
+
+          const glassEntity = getBeerBehindTap(tap.beerType)
+          if (glassEntity) {
+            const glass = BeerGlass.getMutable(glassEntity)
+            glass.beerType = tap.beerType
+            glass.beingFilled = false
+            glass.filled = true
+          }
+        }
+
+        // Listen the action
+      } else if (inputSystem.isTriggered(InputAction.IA_PRIMARY, PointerEventType.PET_DOWN, entity)) {
         const glassEntity = getBeerBehindTap(tapReadonly.beerType)
-        if (glassEntity) Animator.playSingleAnimation(glassEntity, `Pour${getTapData(tapReadonly.beerType).name}`)
-      }
+        if (!glassEntity) {
+          // TODO: notify that there is no glass
+          return
+        }
 
-      const tap = TapComponent.getMutable(entity)
-      tap.pouringTime += dt
+        const glass = BeerGlass.getMutable(glassEntity)
+        if (glass.filled) {
+          // TODO: notify that the glass is filled
+          return
+        }
 
-      if (tap.pouringTime >= 2.5) {
-        tap.pouring = false
+        const tap = TapComponent.getMutable(entity)
+        tap.pouring = true
         tap.pouringTime = 0
 
-        const glassEntity = getBeerBehindTap(tap.beerType)
-        if (glassEntity) {
-          const glass = BeerGlass.getMutable(glassEntity)
-          glass.beerType = tap.beerType
-          glass.beingFilled = false
-          glass.filled = true
-        }
+        glass.beingFilled = true
+        glass.beerType = tap.beerType
       }
-
-      // Listen the action
-    } else if (inputSystem.isTriggered(InputAction.IA_PRIMARY, PointerEventType.PET_DOWN, entity)) {
-      const glassEntity = getBeerBehindTap(tapReadonly.beerType)
-      if (!glassEntity) {
-        // TODO: notify that there is no glass
-        return
-      }
-
-      const glass = BeerGlass.getMutable(glassEntity)
-      if (glass.filled) {
-        // TODO: notify that the glass is filled
-        return
-      }
-
-      const tap = TapComponent.getMutable(entity)
-      tap.pouring = true
-      tap.pouringTime = 0
-
-      glass.beingFilled = true
-      glass.beerType = tap.beerType
     }
   }
 }
