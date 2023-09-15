@@ -7,17 +7,20 @@ import {
 	Transform,
 	AvatarAttach,
 	AvatarAnchorPointType,
-	Animator
+	Animator,
+	SyncComponents
 } from '@dcl/sdk/ecs'
 import { Vector3, Quaternion } from '@dcl/sdk/math'
 import { BeerGlass, PickedUp, TapBase } from '../definitions'
 import { playSound } from './factory'
 import { getEntityParent, getPlayerPosition } from './helpers'
 
-export function pickingGlassSystem() {
+export function pickingGlassSystem(userId: string) {
+	return function() {
 	// If there is some PickedUp, so the behvior is to listen when this
 	//  can be dropped
-	for (const [entity, pickedUp] of engine.getEntitiesWith(PickedUp)) {
+	for (const [entity, pickedUp, avattarAttach] of engine.getEntitiesWith(PickedUp, AvatarAttach)) {
+		if (avattarAttach.avatarId !== userId) continue
 		const tryToDropCommand = inputSystem.getInputCommand(InputAction.IA_PRIMARY, PointerEventType.PET_DOWN)
 		if (tryToDropCommand) {
 			const hitPosition = tryToDropCommand.hit?.position || getPlayerPosition()
@@ -61,26 +64,24 @@ export function pickingGlassSystem() {
 		}
 		return
 	}
-
 	// Only happens when there isn't any PickedUp component
 	for (const [entity, glass] of engine.getEntitiesWith(BeerGlass)) {
 		if (!glass.beingFilled && inputSystem.isTriggered(InputAction.IA_PRIMARY, PointerEventType.PET_DOWN, entity)) {
-			const parentBeer = engine.addEntity()
-			PickedUp.create(parentBeer, {
-				child: entity as any
-			})
+			const parentBeer = engine.getNetworkManager().addEntity()
+			SyncComponents.create(parentBeer, { componentIds: [Transform.componentId, PickedUp.componentId, AvatarAttach.componentId ]})
+			PickedUp.create(parentBeer, { child: entity })
 
 			AvatarAttach.create(parentBeer, {
-				// avatarId: currentPlayerId,
+				avatarId: userId,
 				anchorPointId: AvatarAnchorPointType.AAPT_RIGHT_HAND
 			})
-			Transform.createOrReplace(entity, {
-				position: Vector3.create(0, 0.225, 0),
-				rotation: Quaternion.fromEulerDegrees(180, -90, -60),
-				parent: parentBeer
-			})
+			const transform = Transform.getMutable(entity)
+			transform.parent = parentBeer
+			transform.position = Vector3.create(0, 0.225, 0)
+			transform.rotation = Quaternion.fromEulerDegrees(180, -90, -60)
 
 			playSound('sounds/pickUp.mp3', false, getPlayerPosition())
 		}
 	}
+}
 }

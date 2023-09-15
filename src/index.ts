@@ -5,7 +5,8 @@ import { pickingGlassSystem } from './modules/beerGlass'
 import { createBeerGlass, createTap } from './modules/factory'
 import { tapPumpSystem } from './modules/tap'
 import { getRealm } from '~system/Runtime'
-import { createNetworkTransport } from '@dcl/sdk/network-transport'
+import { getUserData } from '~system/UserIdentity'
+import { createNetworkManager } from '@dcl/sdk/network-transport'
 import { isServer } from '~system/EngineApi'
 
 // TODO: this could (or should?) be added as part of the networkTransport in the sdk package.
@@ -33,7 +34,7 @@ export async function main() {
 	const serverUrl = realm.realmInfo?.isPreview
 		? 'ws://127.0.0.1:3000/ws/localScene'
 		: 'wss://scene-state-server.decentraland.org/ws/MaximoCossetti.dcl.eth'
-	const networkedEntityFactory = await createNetworkTransport(serverUrl)
+	const networkedEntityFactory = await createNetworkManager({ serverUrl })
 
 	const inAServer = isServer && (await isServer({})).isServer
 
@@ -104,8 +105,8 @@ export async function main() {
 		createBeerGlass(beerGlassModel, Vector3.create(13.7, 0.8, 1.9))
 		createBeerGlass(beerGlassModel, Vector3.create(2.4, 0.8, 1.5))
 	} else {
-		engine.addSystem(pickingGlassSystem)
-		engine.addSystem(tapPumpSystem)
+		const userId = (await getUserData({})).data?.userId ?? ''
+		engine.addSystem(pickingGlassSystem(userId))
+		engine.addSystem(tapPumpSystem(userId))
 	}
-
 }
